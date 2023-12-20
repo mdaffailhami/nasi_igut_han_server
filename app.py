@@ -14,8 +14,9 @@ CORS(app)
 cluster = MongoClient(os.getenv('DB_CONNECTION_URL'))
 db = cluster['nasiIgutHanDB']
 
-qnas_collection = db['qnas']
 admins_collection = db['admins']
+qnas_collection = db['qnas']
+products_collection = db['products']
 
 
 @app.route('/admins', methods=['GET'])
@@ -100,6 +101,93 @@ def replace_one_qna():
     print(result)
 
     status = False if result.modified_count == 0 else True
+
+    return jsonify({'status': status})
+
+
+@app.route('/qnas', methods=['DELETE'])
+def delete_one_qna():
+    id = request.args.get('id')
+
+    print(id)
+
+    result = qnas_collection.delete_one({'_id': ObjectId(id)})
+
+    print(result)
+
+    status = False if result.deleted_count == 0 else True
+
+    return jsonify({'status': status})
+
+
+@app.route('/products', methods=['GET'])
+def find_products():
+    docs = list(products_collection.find())
+    print(docs)
+
+    status = False if len(docs) == 0 else True
+
+    return jsonify({
+        'status': status,
+        'docs': json.loads(json_util.dumps(docs))
+    })
+
+
+@app.route('/products', methods=['POST'])
+def insert_one_product():
+    data = request.get_json()
+    print(data)
+
+    result = products_collection.insert_one({
+        'name': data['name'],
+        'description': data['description'],
+        'price': data['price'],
+        'image': data['image'],
+    })
+
+    print(result)
+
+    status = False if result.inserted_id == None else True
+
+    return jsonify({'status': status})
+
+
+@app.route('/products', methods=['PUT'])
+def replace_one_product():
+    id = request.args.get('id')
+    data = request.get_json()
+
+    print(id)
+    print(data)
+
+    result = products_collection.replace_one(
+        {'_id': ObjectId(id)},
+        {
+            'name': data['name'],
+            'description': data['description'],
+            'price': data['price'],
+            'image': data['image'],
+        }
+    )
+
+    print(result)
+
+    status = False if result.modified_count == 0 else True
+
+    return jsonify({'status': status})
+
+
+@app.route('/products', methods=['DELETE'])
+def delete_one_product():
+    id = request.args.get('id')
+
+    print(id)
+
+    result = products_collection.delete_one({'_id': ObjectId(id)})
+
+    print(result)
+
+    status = False if result.deleted_count == 0 else True
 
     return jsonify({'status': status})
 
