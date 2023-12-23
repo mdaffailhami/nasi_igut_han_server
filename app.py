@@ -17,6 +17,7 @@ db = cluster['nasiIgutHanDB']
 admins_collection = db['admins']
 qnas_collection = db['qnas']
 products_collection = db['products']
+settings_collection = db['settings']
 
 
 @app.route('/admins', methods=['GET'])
@@ -188,6 +189,39 @@ def delete_one_product():
     print(result)
 
     status = False if result.deleted_count == 0 else True
+
+    return jsonify({'status': status})
+
+
+settings_id = ObjectId('6584db892b435f216e702dca')
+
+
+@app.route('/settings', methods=['GET'])
+def find_settings():
+    doc = settings_collection.find_one({'_id': settings_id})
+    print(doc)
+
+    status = False if doc == None else True
+
+    return {
+        'status': status,
+        'doc': json.loads(json_util.dumps(doc))
+    }
+
+
+@app.route('/settings', methods=['PUT'])
+def update_settings():
+    data = request.get_json()
+
+    print(data)
+
+    result = settings_collection.replace_one(
+        {'_id': settings_id}, data)
+
+    print(result)
+    print(result.modified_count)
+
+    status = False if result.modified_count == 0 else True
 
     return jsonify({'status': status})
 
