@@ -1,14 +1,33 @@
 import os
+import random
 from flask import Flask, request, json, jsonify
 from pymongo import MongoClient
 from dotenv import load_dotenv
 from bson import json_util
 from bson.objectid import ObjectId
 from flask_cors import CORS
+from flask_mail import Mail, Message
 
 load_dotenv()
 
 app = Flask(__name__)
+
+# app.config['MAIL_SERVER']='sandbox.smtp.mailtrap.io'
+# app.config['MAIL_PORT'] = 2525
+# app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
+# app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
+# app.config['MAIL_USE_TLS'] = True
+# app.config['MAIL_USE_SSL'] = False
+
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USE_SSL'] = False
+
+mail = Mail(app)
+
 CORS(app)
 
 cluster = MongoClient(os.getenv('DB_CONNECTION_URL'))
@@ -23,10 +42,8 @@ settings_collection = db['settings']
 @app.route('/admins', methods=['GET'])
 def find_one_admin():
     email = request.args.get('email')
-    print(email)
 
     doc = admins_collection.find_one({'email': email})
-    print(doc)
 
     status = False if doc == None else True
 
@@ -39,16 +56,28 @@ def find_one_admin():
 @app.route('/admins', methods=['POST'])
 def insert_one_admin():
     data = request.get_json()
-    print(data)
 
     result = admins_collection.insert_one({
         'email': data['email'],
         'password': data['password'],
     })
 
-    print(result)
-
     status = False if result.inserted_id == None else True
+
+    return jsonify({'status': status})
+
+
+@app.route('/admins', methods=['PATCH'])
+def update_one_admin():
+    email = request.args.get('email')
+    data = request.get_json()
+
+    result = admins_collection.update_one(
+        {'email': email},
+        {'$set': data}
+    )
+
+    status = False if result.modified_count == 0 else True
 
     return jsonify({'status': status})
 
@@ -56,7 +85,6 @@ def insert_one_admin():
 @app.route('/qnas', methods=['GET'])
 def find_qnas():
     docs = list(qnas_collection.find())
-    print(docs)
 
     status = False if len(docs) == 0 else True
 
@@ -69,14 +97,11 @@ def find_qnas():
 @app.route('/qnas', methods=['POST'])
 def insert_one_qna():
     data = request.get_json()
-    print(data)
 
     result = qnas_collection.insert_one({
         'question': data['question'],
         'answer': data['answer'],
     })
-
-    print(result)
 
     status = False if result.inserted_id == None else True
 
@@ -88,9 +113,6 @@ def replace_one_qna():
     id = request.args.get('id')
     data = request.get_json()
 
-    print(id)
-    print(data)
-
     result = qnas_collection.replace_one(
         {'_id': ObjectId(id)},
         {
@@ -98,8 +120,6 @@ def replace_one_qna():
             'answer': data['answer'],
         }
     )
-
-    print(result)
 
     status = False if result.modified_count == 0 else True
 
@@ -110,11 +130,7 @@ def replace_one_qna():
 def delete_one_qna():
     id = request.args.get('id')
 
-    print(id)
-
     result = qnas_collection.delete_one({'_id': ObjectId(id)})
-
-    print(result)
 
     status = False if result.deleted_count == 0 else True
 
@@ -124,7 +140,6 @@ def delete_one_qna():
 @app.route('/products', methods=['GET'])
 def find_products():
     docs = list(products_collection.find())
-    print(docs)
 
     status = False if len(docs) == 0 else True
 
@@ -137,7 +152,6 @@ def find_products():
 @app.route('/products', methods=['POST'])
 def insert_one_product():
     data = request.get_json()
-    print(data)
 
     result = products_collection.insert_one({
         'name': data['name'],
@@ -145,8 +159,6 @@ def insert_one_product():
         'price': data['price'],
         'image': data['image'],
     })
-
-    print(result)
 
     status = False if result.inserted_id == None else True
 
@@ -158,9 +170,6 @@ def replace_one_product():
     id = request.args.get('id')
     data = request.get_json()
 
-    print(id)
-    print(data)
-
     result = products_collection.replace_one(
         {'_id': ObjectId(id)},
         {
@@ -171,8 +180,6 @@ def replace_one_product():
         }
     )
 
-    print(result)
-
     status = False if result.modified_count == 0 else True
 
     return jsonify({'status': status})
@@ -182,11 +189,7 @@ def replace_one_product():
 def delete_one_product():
     id = request.args.get('id')
 
-    print(id)
-
     result = products_collection.delete_one({'_id': ObjectId(id)})
-
-    print(result)
 
     status = False if result.deleted_count == 0 else True
 
@@ -199,7 +202,6 @@ settings_id = ObjectId('6584db892b435f216e702dca')
 @app.route('/settings', methods=['GET'])
 def find_settings():
     doc = settings_collection.find_one({'_id': settings_id})
-    print(doc)
 
     status = False if doc == None else True
 
@@ -213,17 +215,47 @@ def find_settings():
 def update_settings():
     data = request.get_json()
 
-    print(data)
-
     result = settings_collection.replace_one(
         {'_id': settings_id}, data)
-
-    print(result)
-    print(result.modified_count)
 
     status = False if result.modified_count == 0 else True
 
     return jsonify({'status': status})
+
+
+@app.route('/contact-us', methods=['POST'])
+def send_email():
+    data = request.get_json()
+    print(data)
+
+    mail.send(Message(
+        sender=os.getenv('MAIL_USERNAME'),
+        recipients=[os.getenv('MAIL_USERNAME')],
+        subject='Pesan dari Nasi Igut Han Web',
+        body=f"Dari: {data['name']} ({data['email']})\nPesan: {data['message']}",
+    ))
+
+    return jsonify({'status': True})
+
+
+@app.route('/reset-password', methods=['GET'])
+def reset_password():
+    verification_code = str(random.randint(100000, 999999))
+
+    try:
+        mail.send(Message(
+            sender=os.getenv('MAIL_USERNAME'),
+            recipients=[os.getenv('MAIL_USERNAME')],
+            subject='Reset Password Nasi Igut Han',
+            body=f'Kode verifikasi untuk reset password anda adalah {verification_code}',
+        ))
+
+        return jsonify({
+            'status': True,
+            'verificationCode': verification_code
+        })
+    except:
+        return jsonify({'status': False})
 
 
 if __name__ == '__main__':
