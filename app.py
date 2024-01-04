@@ -64,7 +64,7 @@ def insert_one_admin():
 
     status = False if result.inserted_id == None else True
 
-    return jsonify({'status': status})
+    return jsonify({'status': status, 'insertedID': str(result.inserted_id)})
 
 
 @app.route('/admins', methods=['PATCH'])
@@ -105,7 +105,7 @@ def insert_one_qna():
 
     status = False if result.inserted_id == None else True
 
-    return jsonify({'status': status})
+    return jsonify({'status': status, 'insertedID': str(result.inserted_id)})
 
 
 @app.route('/qnas', methods=['PUT'])
@@ -162,7 +162,7 @@ def insert_one_product():
 
     status = False if result.inserted_id == None else True
 
-    return jsonify({'status': status})
+    return jsonify({'status': status, 'insertedID': str(result.inserted_id)})
 
 
 @app.route('/products', methods=['PUT'])
