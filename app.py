@@ -1,6 +1,6 @@
 import os
 import random
-from flask import Flask, request, json, jsonify
+from flask import Flask, request, json, jsonify, render_template
 from pymongo import MongoClient
 from dotenv import load_dotenv
 from bson import json_util
@@ -10,7 +10,11 @@ from flask_mail import Mail, Message
 
 load_dotenv()
 
-app = Flask(__name__)
+app = Flask(
+    __name__,
+    static_url_path='/',
+    template_folder='static'
+)
 
 # app.config['MAIL_SERVER']='sandbox.smtp.mailtrap.io'
 # app.config['MAIL_PORT'] = 2525
@@ -256,6 +260,11 @@ def reset_password():
         })
     except:
         return jsonify({'status': False})
+
+
+@app.errorhandler(404)
+def web_page(e):
+    return render_template('index.html')
 
 
 if __name__ == '__main__':
